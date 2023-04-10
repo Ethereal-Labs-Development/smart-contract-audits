@@ -9,7 +9,7 @@ TG: https://t.me/dojochip
 "When something is important enough, you do it even if the odds are not in your favor." Elon Musk
 */ 
                                                     
-pragma solidity 0.8.9;
+pragma solidity ^0.8.9;
 
 abstract contract Context {
     function _msgSender() internal view virtual returns (address) {
