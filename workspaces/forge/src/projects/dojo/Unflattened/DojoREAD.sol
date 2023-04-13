@@ -419,74 +419,32 @@ contract DojoCHIP is ERC20, Ownable {
 
     function tokenFromReflection(uint256 rAmount) private view returns(uint256) {
         require(rAmount <= _rTotal, "Amount must be less than total reflections");
-        uint256 currentRate =  _getRate();
+        uint256 currentRate =  _rTotal.div(_tTotal);
         return rAmount.div(currentRate);
     }
-
-    // @gas Why is there an internal function that calls another internal function???
-    function _tokenTransfer(address sender, address recipient, uint256 amount, uint256 reflectionFee) private {      
-        _transferStandard(sender, recipient, amount, reflectionFee);
-    }
-
+    
     // address(this) => deadAddress
     // amount is refiAmount == tokensForBurn + tokensForReflection
     // reflectionFee == 50
-    function _transferStandard(address sender, address recipient, uint256 tAmount, uint256 reflectionFee) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount, reflectionFee);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
+    function _tokenTransfer(address sender, address recipient, uint256 amount, uint256 reflectionFee) private {      
 
-    function _reflectFee(uint256 rFee, uint256 tFee) private {
-        _rTotal = _rTotal.sub(rFee);
-        _tFeeTotal = _tFeeTotal.add(tFee);
-    }
+        uint256 tFee = amount * reflectionFee / 100; // tFee = refiAmount*.5
+        uint256 tTransferAmount = amount - tFee; // tTransferAmount = refiAmount - tFee (refiAmount*.5)
+        
+        uint256 currentRate = _rTotal.div(_tTotal);
 
-    function _getValues(uint256 tAmount, uint256 reflectionFee) private view returns (uint256, uint256, uint256, uint256, uint256) {
-        (uint256 tTransferAmount, uint256 tFee) = _getTValues(tAmount, reflectionFee);
-        uint256 currentRate =  _getRate();
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, currentRate);
-        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee);
-    }
-
-    // tTransferAmount = tAmount / reflectionFee QUOTIENT aka RESULT
-    // tFee = tAmount % reflectionFee REMAINDER
-    function _getTValues(uint256 tAmount, uint256 reflectionFee) private pure returns (uint256, uint256) {
-        uint256 tFee = tAmount.mul(reflectionFee).div(100); // tFee = refiAmount*.5
-        uint256 tTransferAmount = tAmount.sub(tFee); // tTransferAmount = refiAmount - tFee (refiAmount*.5)
-        return (tTransferAmount, tFee); // if tAmount = 100, tTranferAmount = 50, tFee = 50
-    }
-
-    // tAmount = refiAmount
-    // tFee = refiAmount*.5 aka 50 aka refiAmount - tTransferAmount
-    // currentRate is reflection rate
-    function _getRValues(uint256 tAmount, uint256 tFee, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
-        uint256 rAmount = tAmount.mul(currentRate);
+        uint256 rAmount = amount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
         uint256 rTransferAmount = rAmount.sub(rFee);
-        return (rAmount, rTransferAmount, rFee);
-    }
 
-    function _getRate() private view returns(uint256) {
-        // rSupply = _rTotal
-        // tSupply = _tTotal
-        (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
-        return rSupply.div(tSupply); // por que? 
-    }
+        _rOwned[sender] = _rOwned[sender].sub(rAmount);
+        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
 
-    // @gas This function just returns 2 state variables
-    /// @return _rTotal
-    /// @return _tTotal
-    function _getCurrentSupply() private view returns(uint256, uint256) {
-        uint256 rSupply = _rTotal;
-        uint256 tSupply = _tTotal;
+        //reflectFee
+        _rTotal = _rTotal.sub(rFee);
+        _tFeeTotal = _tFeeTotal.add(tFee);
 
-        // @audit This returns the exact same values. If statement does nothing.
-        // @gas Unnecessary if statement and operations, should just return state variables.
-        if (rSupply < _rTotal.div(_tTotal)) return (_rTotal, _tTotal);
-        return (rSupply, tSupply);
+        emit Transfer(sender, recipient, tTransferAmount);
     }
     
     function burnAndReflect(uint256 _amount) private {
