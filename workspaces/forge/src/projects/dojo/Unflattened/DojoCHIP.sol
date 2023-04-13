@@ -259,7 +259,7 @@ contract DojoCHIP is ERC20, Ownable {
             if (
                 from != owner() &&
                 to != owner() &&
-                to != address(0) &&
+                to != address(0) && // @audit check not necessary
                 to != address(0xdead) &&
                 !swapping
             ) {
@@ -270,6 +270,7 @@ contract DojoCHIP is ERC20, Ownable {
                 // Prevents a single address from making a bunch of buys/sells in the same block from Uniswap or another contract.
                 // Tx.origin is the originator of a call or sequence of calls between smart contracts. It does not change and will
                 // always be a wallet address.
+                // @audit why check the router??
                 if (transferDelayEnabled){
                     if (to != owner() && to != address(uniswapV2Router) && to != address(uniswapV2Pair)){
                         require(_holderLastTransferTimestamp[tx.origin] < block.number, "_transfer:: Transfer Delay enabled.  Only one purchase per block allowed.");
@@ -277,31 +278,39 @@ contract DojoCHIP is ERC20, Ownable {
                     }
                 }
 
-                // when buy
+                // ON A BUY, ensure recipient is not receiving too many tokens at once.
+                // Unless the reciever is excluded from maxTx.
                 if (automatedMarketMakerPairs[from] && !_isExcludedMaxTransactionAmount[to]) {
                     require(amount <= maxTransactionAmount, "Buy transfer amount exceeds the maxTransactionAmount.");
                 }
 
+                // ON A SELL, OR TRANSFER it will ensure user isnt selling or sending too many tokens at once.
+                // Unless the seller is excluded from maxTx.
                 if (!_isExcludedMaxTransactionAmount[from]) {
                     require(amount <= maxTransactionAmount, "transfer amount exceeds the maxTransactionAmount.");
                 }
 
+                // Ensure recipient's wallet doesn't already have too many tokens.
+                // Unless recipient is excluded from maxWallet
+                // NOTE: PAIR is excluded form maxWallet
                 if (!_isExcludedMaxWalletAmount[to]) {
                     require(amount + balanceOf(to) <= maxWallet, "Max wallet exceeded");
                 }
             }
         }
 
+        // @gas these checks should be done AFTER the sell check
         /// HANDLES GETTING ETH OUT IN EXCHANGE FOR ACCRUED TOKENS FROM TAXES IN THIS CONTRACT!
 		uint256 contractTokenBalance = balanceOf(address(this));
         
+        // Once the contract has enough tokens (accrued from royalties), it will sell those tokens for ETH and send it to team
         bool canSwap = contractTokenBalance >= swapTokensAtAmount;
 
         if ( 
             canSwap &&
-            !swapping &&
-            !automatedMarketMakerPairs[from] &&
-            !_isExcludedFromFees[from] &&
+            !swapping && // re-entrancy lock
+            !automatedMarketMakerPairs[from] && // sell
+            !_isExcludedFromFees[from] && // @gas why check for excluded form fees? They're not being taxes here
             !_isExcludedFromFees[to]
         ) {
             swapping = true;
@@ -311,6 +320,7 @@ contract DojoCHIP is ERC20, Ownable {
             swapping = false;
         }
 
+        // @gas Check is pointless because we check for address(this) to be whitelisted below
         bool takeFee = !swapping;
 
         // if any account belongs to _isExcludedFromFee account then remove the fee
@@ -318,21 +328,25 @@ contract DojoCHIP is ERC20, Ownable {
             takeFee = false;
         }
         
+        // @gas not necessary to assign these to a default value
         uint256 fees = 0;
         uint256 reflectionFee = 0;
  
         if (takeFee){
 
-            // on buy
+            // on a BUY, we will take the buy tax.
+            // @gas No reason to check if to is uniswapRouter
             if (automatedMarketMakerPairs[from] && to != address(uniswapV2Router)) {
                 fees = amount.mul(buyTotalFees).div(100);
+                // @gas No reason to pass a STATE variable to an internal function
                 getTokensForFees(amount, buyTreasuryFee, buyBurnFee, buyReflectionFee);
             }
 
-            // on sell
+            // on SELL, we will take the sell tax.
+            // @gas no reason to check if tokens are coming from the uniswapRouter
             else if (automatedMarketMakerPairs[to] && from != address(uniswapV2Router)) {
-                    fees = amount.mul(sellTotalFees).div(100);
-                    getTokensForFees(amount, sellTreasuryFee, sellBurnFee, sellReflectionFee);
+                fees = amount.mul(sellTotalFees).div(100);
+                getTokensForFees(amount, sellTreasuryFee, sellBurnFee, sellReflectionFee);
             }
 
             if (fees > 0) {
@@ -352,12 +366,14 @@ contract DojoCHIP is ERC20, Ownable {
         _tokenTransfer(from, to, amount, reflectionFee);
     }
 
+    // @todo WHERE DO ALL THESE TOKENS GO??
     function getTokensForFees(uint256 _amount, uint256 _treasuryFee, uint256 _burnFee, uint256 _reflectionFee) private {
         tokensForTreasury += _amount.mul(_treasuryFee).div(100);
         tokensForBurn += _amount.mul(_burnFee).div(100);
         tokensForReflections += _amount.mul(_reflectionFee).div(100);
     }
 
+    // Swaps DOJO tokens to ETH via Uniswap
     function swapTokensForEth(uint256 tokenAmount) private {
 
         // generate the uniswap pair path of token -> weth
@@ -379,7 +395,7 @@ contract DojoCHIP is ERC20, Ownable {
     }
 
     function swapBack() private {
-        uint256 contractBalance = balanceOf(address(this));
+        uint256 contractBalance = balanceOf(address(this)); // @gas why not just use this in the params??
         bool success;
         
         if(contractBalance == 0) {return;}
@@ -407,10 +423,14 @@ contract DojoCHIP is ERC20, Ownable {
         return rAmount.div(currentRate);
     }
 
+    // @gas Why is there an internal function that calls another internal function???
     function _tokenTransfer(address sender, address recipient, uint256 amount, uint256 reflectionFee) private {      
         _transferStandard(sender, recipient, amount, reflectionFee);
     }
 
+    // address(this) => deadAddress
+    // amount is refiAmount == tokensForBurn + tokensForReflection
+    // reflectionFee == 50
     function _transferStandard(address sender, address recipient, uint256 tAmount, uint256 reflectionFee) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount, reflectionFee);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
@@ -432,9 +452,9 @@ contract DojoCHIP is ERC20, Ownable {
     }
 
     function _getTValues(uint256 tAmount, uint256 reflectionFee) private pure returns (uint256, uint256) {
-        uint256 tFee = tAmount.mul(reflectionFee).div(100);
-        uint256 tTransferAmount = tAmount.sub(tFee);
-        return (tTransferAmount, tFee);
+        uint256 tFee = tAmount.mul(reflectionFee).div(100); // tFee = refiAmount*.5
+        uint256 tTransferAmount = tAmount.sub(tFee); // tTransferAmount = refiAmount - tFee (refiAmount*.5)
+        return (tTransferAmount, tFee); // if tAmount = 100, tTranferAmount = 50, tFee = 50
     }
 
     function _getRValues(uint256 tAmount, uint256 tFee, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
