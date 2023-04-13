@@ -451,6 +451,8 @@ contract DojoCHIP is ERC20, Ownable {
         return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee);
     }
 
+    // tTransferAmount = tAmount / reflectionFee QUOTIENT aka RESULT
+    // tFee = tAmount % reflectionFee REMAINDER
     function _getTValues(uint256 tAmount, uint256 reflectionFee) private pure returns (uint256, uint256) {
         uint256 tFee = tAmount.mul(reflectionFee).div(100); // tFee = refiAmount*.5
         uint256 tTransferAmount = tAmount.sub(tFee); // tTransferAmount = refiAmount - tFee (refiAmount*.5)
