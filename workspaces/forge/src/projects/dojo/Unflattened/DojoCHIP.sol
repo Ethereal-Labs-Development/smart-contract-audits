@@ -20,14 +20,12 @@ contract DojoCHIP is ERC20, Ownable {
     using SafeMath for uint256;
 
     mapping (address => uint256) private _rOwned;
-    // MAX = 115792089237316195423570985008687907853269984665640564039457584007913129639935
-    uint256 constant private MAX = ~uint256(0);
-    // _tTotal = 115792089237316195423570985008687907853269984665640564039457584007000000000000
+    uint256 constant private MAX = ~uint256(0); // = 115792089237316195423570985008687907853269984665640564039457584007913129639935
+    // _tTotal = 9000000000000
     uint256 constant private _tTotal = 9 * 1e6 * 1e6;
     // @audit This amount is total supply of the token.
-    uint256 private _tSupply;
-    // _rTotal = 9000000000000
-    uint256 private _rTotal = (MAX - (MAX % _tTotal));
+    uint256 private _tSupply;   // = 9000000000000
+    uint256 private _rTotal = (MAX - (MAX % _tTotal)); // = 115792089237316195423570985008687907853269984665640564039457584007000000000000
     uint256 private _tFeeTotal;
     
     uint256 public maxTransactionAmount;
@@ -149,14 +147,19 @@ contract DojoCHIP is ERC20, Ownable {
     // remove limits after token is stable
     function removeLimits() external onlyOwner returns (bool) {
         limitsInEffect = false;
+        // @gas Unnecessary boolean return value.
+        // Furthermore having removing limits forever, leads to a lot of dead code in `_transfer`
         return true;
     }
 
      // change the minimum amount of tokens to swap
+    // @audit This function accounts for decimals internally. 
+    // You need to enter `10` even though that's actually worth `10 * 1e6`
     function updateSwapTokensAtAmount(uint256 newAmount) external onlyOwner returns (bool) {
   	    require(newAmount >= (totalSupply() * 1 / 100000) / 1e6, "Swap amount cannot be lower than 0.001% total supply.");
   	    require(newAmount <= (totalSupply() * 5 / 1000) / 1e6, "Swap amount cannot be higher than 0.5% total supply.");
   	    swapTokensAtAmount = newAmount * (10**6);
+        // @gas Unnecessary boolean return value.
   	    return true;
   	}
     
@@ -172,7 +175,8 @@ contract DojoCHIP is ERC20, Ownable {
         updateLimits();
     }
 
-    //
+    // @audit No limit for delay digit. Could theoretically lock the contract indefinitely.
+    // Can be overridden by calling `removeLimits()`.
     function updateDelayDigit(uint256 newNum) external onlyOwner{
         delayDigit = newNum;
     }
@@ -190,6 +194,8 @@ contract DojoCHIP is ERC20, Ownable {
         buyTreasuryFee = _treasuryFee;
         buyBurnFee = _burnFee;
         buyReflectionFee = _reflectionFee;
+        // @gas More efficient to use the parameters for the calculation of sellTotalFees
+        // rather than read from storage variables again
         buyTotalFees = buyTreasuryFee + buyBurnFee + buyReflectionFee;
         require(buyTotalFees <= 10, "Must keep fees at 10% or less");
     }
@@ -199,6 +205,8 @@ contract DojoCHIP is ERC20, Ownable {
         sellTreasuryFee = _treasuryFee;
         sellBurnFee = _burnFee;
         sellReflectionFee = _reflectionFee;
+        // @gas More efficient to use the parameters for the calculation of sellTotalFees
+        // rather than read from storage variables again
         sellTotalFees = sellTreasuryFee + sellBurnFee + sellReflectionFee;
         require(sellTotalFees <= 10, "Must keep fees at 10% or less");
     }
@@ -218,11 +226,12 @@ contract DojoCHIP is ERC20, Ownable {
 
     }
 
-    // @audit Missing zero address check.
+    // @audit Missing zero address check. Could lead to lost funds.
     function updateTreasuryWallet(address newTreasuryWallet) external onlyOwner {
         Treasury = newTreasuryWallet;
     }
 
+    // @audit Calls to this function will overwrite changes made with `updateSwapTokensAtAmount()`
     function updateLimits() private {
         maxTransactionAmount = _tSupply * transDigit / 100;
         swapTokensAtAmount = _tSupply * 1 / 10000; // 0.01% swap wallet;
@@ -242,6 +251,10 @@ contract DojoCHIP is ERC20, Ownable {
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
 
+        // Limits include:
+        // 1. Preventing transfers
+        // 2. Delaying transfers
+        // 3. Limiting transfer amounts and balances
         if (limitsInEffect) {
             if (
                 from != owner() &&
@@ -254,6 +267,9 @@ contract DojoCHIP is ERC20, Ownable {
                     require(_isExcludedFromFees[from] || _isExcludedFromFees[to], "Trading is not active.");
                 }
  
+                // Prevents a single address from making a bunch of buys/sells in the same block from Uniswap or another contract.
+                // Tx.origin is the originator of a call or sequence of calls between smart contracts. It does not change and will
+                // always be a wallet address.
                 if (transferDelayEnabled){
                     if (to != owner() && to != address(uniswapV2Router) && to != address(uniswapV2Pair)){
                         require(_holderLastTransferTimestamp[tx.origin] < block.number, "_transfer:: Transfer Delay enabled.  Only one purchase per block allowed.");
@@ -276,6 +292,7 @@ contract DojoCHIP is ERC20, Ownable {
             }
         }
 
+        /// HANDLES GETTING ETH OUT IN EXCHANGE FOR ACCRUED TOKENS FROM TAXES IN THIS CONTRACT!
 		uint256 contractTokenBalance = balanceOf(address(this));
         
         bool canSwap = contractTokenBalance >= swapTokensAtAmount;
@@ -428,6 +445,8 @@ contract DojoCHIP is ERC20, Ownable {
     }
 
     function _getRate() private view returns(uint256) {
+        // rSupply = _rTotal
+        // tSupply = _tTotal
         (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
         return rSupply.div(tSupply);
     }
