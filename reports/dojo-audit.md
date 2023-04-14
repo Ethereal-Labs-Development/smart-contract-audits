@@ -10,7 +10,7 @@ A smart contract security review can never verify the complete absence of vulner
 
 Description: “Dojo Chip is an ERC-20 project that has a community filled with AI fanatics. Their team hopes to provide security to the space through a transaction vetting process. They are looking to build a payment processing system which will allow users to go from credit/debit to Crypto without requiring hot wallets such as MetaMask.”
 
-Telegram: https://t.me/dojochip
+Telegram: https://t.me/dojochipk
 Twitter: https://twitter.com/DojoChipERC
 Website: https://dojochip.io
 

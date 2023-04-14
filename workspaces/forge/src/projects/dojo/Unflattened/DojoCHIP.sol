@@ -152,7 +152,7 @@ contract DojoCHIP is ERC20, Ownable {
         return true;
     }
 
-     // change the minimum amount of tokens to swap
+    // change the minimum amount of tokens to swap
     // @audit This function accounts for decimals internally. 
     // You need to enter `10` even though that's actually worth `10 * 1e6`
     function updateSwapTokensAtAmount(uint256 newAmount) external onlyOwner returns (bool) {
