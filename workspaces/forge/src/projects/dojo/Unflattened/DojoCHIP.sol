@@ -12,7 +12,7 @@ import { SafeMath } from "./SafeMath.sol";
 // Interfaces
 import { IUniswapV2Router02 } from "./IUniswapV2Router02.sol"; /// @notice Includes IUniswapV2Router01 interface.
 import { IUniswapV2Factory } from "./IUniswapV2Factory.sol";
-// @audit This interface is included in the flattened contract but never used.
+// @gas This interface is included in the flattened contract but never used.
 import { IUniswapV2Pair } from "./IUniswapV2Pair.sol"; 
 
 contract DojoCHIP is ERC20, Ownable {
@@ -24,7 +24,7 @@ contract DojoCHIP is ERC20, Ownable {
     // _tTotal = 9000000000000
     uint256 constant private _tTotal = 9 * 1e6 * 1e6;
     // @audit This amount is total supply of the token.
-    uint256 private _tSupply;   // = 9_000_000.000000
+    uint256 private _tSupply;   // = 9000000000000
     uint256 private _rTotal = (MAX - (MAX % _tTotal)); // = 115792089237316195423570985008687907853269984665640564039457584007000000000000
     uint256 private _tFeeTotal;
     
@@ -69,11 +69,11 @@ contract DojoCHIP is ERC20, Ownable {
     uint256 public walletDigit;
     uint256 public transDigit;
     uint256 public delayDigit;
-    
+
     /******************/
 
     // exclude from fees, max transaction amount and max wallet amount
-    mapping (address => bool) private _isExcludedFromFees;
+    mapping (address => bool) public _isExcludedFromFees;
     mapping (address => bool) public _isExcludedMaxTransactionAmount;
     mapping (address => bool) public _isExcludedMaxWalletAmount;
 
@@ -156,12 +156,12 @@ contract DojoCHIP is ERC20, Ownable {
     // @audit This function accounts for decimals internally. 
     // You need to enter `10` even though that's actually worth `10 * 1e6`
     function updateSwapTokensAtAmount(uint256 newAmount) external onlyOwner returns (bool) {
-  	    require(newAmount >= (totalSupply() * 1 / 100000) / 1e6, "Swap amount cannot be lower than 0.001% total supply.");
-  	    require(newAmount <= (totalSupply() * 5 / 1000) / 1e6, "Swap amount cannot be higher than 0.5% total supply.");
-  	    swapTokensAtAmount = newAmount * (10**6);
+        require(newAmount >= (totalSupply() * 1 / 100000) / 1e6, "Swap amount cannot be lower than 0.001% total supply.");
+        require(newAmount <= (totalSupply() * 5 / 1000) / 1e6, "Swap amount cannot be higher than 0.5% total supply.");
+        swapTokensAtAmount = newAmount * (10**6);
         // @gas Unnecessary boolean return value.
-  	    return true;
-  	}
+        return true;
+    }
     
     function updateTransDigit(uint256 newNum) external onlyOwner {
         require(newNum >= 1);
@@ -301,7 +301,7 @@ contract DojoCHIP is ERC20, Ownable {
 
         // @gas these checks should be done AFTER the sell check
         /// HANDLES GETTING ETH OUT IN EXCHANGE FOR ACCRUED TOKENS FROM TAXES IN THIS CONTRACT!
-		uint256 contractTokenBalance = balanceOf(address(this));
+        uint256 contractTokenBalance = balanceOf(address(this));
         
         // Once the contract has enough tokens (accrued from royalties), it will sell those tokens for ETH and send it to team
         bool canSwap = contractTokenBalance >= swapTokensAtAmount;
@@ -340,21 +340,35 @@ contract DojoCHIP is ERC20, Ownable {
                 fees = amount.mul(buyTotalFees).div(100);
                 // @gas No reason to pass a STATE variable to an internal function
                 getTokensForFees(amount, buyTreasuryFee, buyBurnFee, buyReflectionFee);
+                // tokensForTreasury += amount.mul(buyTreasuryFee).div(100)
+                // tokensForBurn += amount.mul(buyBurnFee).div(100)
+                // tokensForReflections += amount.mul(buyReflectionFee).div(100)
             }
 
             // on SELL, we will take the sell tax.
             // @gas no reason to check if tokens are coming from the uniswapRouter
             else if (automatedMarketMakerPairs[to] && from != address(uniswapV2Router)) {
                 fees = amount.mul(sellTotalFees).div(100);
-                getTokensForFees(amount, sellTreasuryFee, sellBurnFee, sellReflectionFee);
+                getTokensForFees(amount, sellTreasuryFee, sellBurnFee, sellBurnFee);
+                // tokensForTreasury += amount.mul(sellTreasuryFee).div(100)
+                // tokensForBurn += amount.mul(sellBurnFee).div(100)
+                // tokensForReflections += amount.mul(sellBurnFee).div(100)
             }
 
             if (fees > 0) {
+                // this transfer the fee amount from the seller/buyer to this contract without taking reflections
+                // so the fees go directly to the contract without taxes.
                 _tokenTransfer(from, address(this), fees, 0);
+                // these values are set by `getTokensForFees()` calls above
                 uint256 refiAmount = tokensForBurn + tokensForReflections;
                 bool refiAndBurn = refiAmount > 0;
 
                 if(refiAndBurn){
+                    // @audit refiAmount is the sum of tokensForBurn and tokensForReflections.
+                    // BUT there could be an instance where there are more tokens for reflections
+                    // than there are tokens for burning. Unfortunately, burnAndReflect will always
+                    // burn 50% of this total and reflect the leftovers!
+                    // It should only burn the tokensForBurn and only reflect tokensForReflections.
                     burnAndReflect(refiAmount);
                 }
 
@@ -363,6 +377,8 @@ contract DojoCHIP is ERC20, Ownable {
             amount -= fees;
         }
 
+        // @audit reflectionFee is always zero!
+        // transfers amount - fees without reflections
         _tokenTransfer(from, to, amount, reflectionFee);
     }
 
@@ -373,7 +389,7 @@ contract DojoCHIP is ERC20, Ownable {
         tokensForReflections += _amount.mul(_reflectionFee).div(100);
     }
 
-    // Swaps DOJO tokens to ETH via Uniswap
+    // Swaps DOJO tokens of this contract for ETH via Uniswap
     function swapTokensForEth(uint256 tokenAmount) private {
 
         // generate the uniswap pair path of token -> weth
@@ -402,9 +418,15 @@ contract DojoCHIP is ERC20, Ownable {
 
         swapTokensForEth(contractBalance); 
 
+        // @audit This value is reset appropriately because when fees are taken, the total fee amount
+        // in tokens is transferred to this contract. The contracts token balance is subtracted from 
+        // when burnAndReflect() is called leaving only the tokens for treasury fees remaining in the
+        // contract balance. So swapping the contract balance of tokens for ETH, this is equivalent to
+        // to swapping the tokens for treasury fees for ETH.
         tokensForTreasury = 0;
 
         // @audit Does not validate success of the transfer to the Treasury.
+        // If this is a contract that does not have a receive or fallback payable function, it cannot receive ETH.
         (success,) = address(Treasury).call{value: address(this).balance}("");
     }
 
@@ -417,6 +439,8 @@ contract DojoCHIP is ERC20, Ownable {
         return tokenFromReflection(_rOwned[account]);
     }
 
+    // @audit Does not accurately calculate tokens from reflection because the
+    // rate is calculated using _rTotal and _tTotal instead of _rTotal and _tSupply
     function tokenFromReflection(uint256 rAmount) private view returns(uint256) {
         require(rAmount <= _rTotal, "Amount must be less than total reflections");
         uint256 currentRate =  _getRate();
@@ -433,21 +457,51 @@ contract DojoCHIP is ERC20, Ownable {
     // reflectionFee == 50
     function _transferStandard(address sender, address recipient, uint256 tAmount, uint256 reflectionFee) private {
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee) = _getValues(tAmount, reflectionFee);
+
+        //  rAmount =               tAmount * (_rTotal / _tTotal), 
+        //  rTransferAmount =       (tAmount * (_rTotal / _tTotal)) - ((tAmount * reflectionFee / 100) * (_rTotal / _tTotal)),
+        //  rFee =                  (tAmount * reflectionFee / 100) * (_rTotal / _tTotal),
+        //  tTransferAmount =       tAmount - (tAmount * reflectionFee / 100),
+        //  tFee =                  tAmount * reflectionFee / 100
+
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
 
+    /// @notice updates _rTotal = _rTotal - rFee
     function _reflectFee(uint256 rFee, uint256 tFee) private {
+        // @audit only _rTotal is used elsewhere for reflections and makes a difference in future tax calculations
+        //  tFee =                  tAmount * reflectionFee / 100,
+        //  rFee =                  (tAmount * reflectionFee / 100) * (_rTotal / _tTotal),
         _rTotal = _rTotal.sub(rFee);
+        
+        // @gas This state variable is not used for anything, but being updated
         _tFeeTotal = _tFeeTotal.add(tFee);
     }
 
     function _getValues(uint256 tAmount, uint256 reflectionFee) private view returns (uint256, uint256, uint256, uint256, uint256) {
+        // _getTValues(tAmount, reflectionFee)
+        // tTransferAmount = tAmount - (tAmount * reflectionFee / 100)
+        // tFee = tAmount * reflectionFee / 100
         (uint256 tTransferAmount, uint256 tFee) = _getTValues(tAmount, reflectionFee);
+
+        // currentRate = _rTotal / _tTotal
         uint256 currentRate =  _getRate();
+
+        // _getRValues(tAmount,  tAmount * reflectionFee / 100, _rTotal / _tTotal)
+        // rAmount = tAmount * (_rTotal / _tTotal)
+        // rFee = (tAmount * reflectionFee / 100) * (_rTotal / _tTotal)
+        // rTransferAmount = (tAmount * (_rTotal / _tTotal)) - ((tAmount * reflectionFee / 100) * (_rTotal / _tTotal))
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, currentRate);
+
+
+        //  rAmount =               tAmount * (_rTotal / _tTotal), 
+        //  rTransferAmount =       (tAmount * (_rTotal / _tTotal)) - ((tAmount * reflectionFee / 100) * (_rTotal / _tTotal)),
+        //  rFee =                  (tAmount * reflectionFee / 100) * (_rTotal / _tTotal),
+        //  tTransferAmount =       tAmount - (tAmount * reflectionFee / 100),
+        //  tFee =                  tAmount * reflectionFee / 100
         return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee);
     }
 
@@ -457,28 +511,40 @@ contract DojoCHIP is ERC20, Ownable {
         uint256 tFee = tAmount.mul(reflectionFee).div(100); // tFee = refiAmount*.5
         uint256 tTransferAmount = tAmount.sub(tFee); // tTransferAmount = refiAmount - tFee (refiAmount*.5)
         return (tTransferAmount, tFee); // if tAmount = 100, tTranferAmount = 50, tFee = 50
+        // if tAmount is 99, tFee = 49, tTransferAmount = 51
     }
 
-    // tAmount = refiAmount
-    // tFee = refiAmount*.5 aka 50 aka refiAmount - tTransferAmount
-    // currentRate is reflection rate
     function _getRValues(uint256 tAmount, uint256 tFee, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
+        // @gas Should have named return variables rather than return local variables
         uint256 rAmount = tAmount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
         uint256 rTransferAmount = rAmount.sub(rFee);
         return (rAmount, rTransferAmount, rFee);
     }
 
+    // @audit Since _tTotal never changes but _tSupply does, reflections, balances, and totalSupply are inconsistent.
+    // user balance = (user reflections / total reflections) * total supply
+    // although total reflections goes down over time, the "total supply" used in this 
+    // calculation never changes which means the true total supply is disregarded.
+
+    // Tokens in circulation based on totalSupply() = 8815430784337
+    // Tokens in circulation based on holder balances = 8949951364452
+
+    // NOTE GET RATE RETURNS RATIO OF TOTAL REFLECTIONS TO TOTAL TOKENS (AKA TOTAL REF/ TOTAL TOKENS)
+    // _tSupply is the token's true total supply
+    // _tTotal is never updated!
+    // returns _rTotal/_tTotal
+    // @audit Critical flaw, does not reference proper total supply variable when
+    // performing reflection calculations. Burns are not included here!
     function _getRate() private view returns(uint256) {
         // rSupply = _rTotal
         // tSupply = _tTotal
         (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
-        return rSupply.div(tSupply); // por que? 
+        return rSupply.div(tSupply);
     }
 
-    // @gas This function just returns 2 state variables
-    /// @return _rTotal
-    /// @return _tTotal
+    // @audit Critical flaw, does not reference proper total supply variable when
+    // performing reflection calculations. Burns are not included here!
     function _getCurrentSupply() private view returns(uint256, uint256) {
         uint256 rSupply = _rTotal;
         uint256 tSupply = _tTotal;
@@ -489,8 +555,20 @@ contract DojoCHIP is ERC20, Ownable {
         return (rSupply, tSupply);
     }
     
+    // @audit Critical flaw: transfers refiAmount/2 worth of tokens to the deadAddress effectively
+    // burning them and subtracts the leftovers from reflections.
     function burnAndReflect(uint256 _amount) private {
+
+        // @audit This will always burn half of the sum of reflection and burn fees even if
+        // there were more tokens for burns than there were tokens for reflections and vice versa.
+        // Should only burn the tokensForBurns amount of tokens.
+        // Should only reflect the tokensForReflections amount of tokens.
+
+        // 50% of tokens are burned and the remaining half are deduced from total reflections
         _tokenTransfer(address(this), deadAddress, _amount, 50);
+
+        // @audit Although 50% of the tokens are deducted from _tSupply, this will not be
+        // registered when calculating future reflections, balances, and fees.
         _tSupply -= _amount.div(2);
         tokensForReflections = 0;
         tokensForBurn = 0;
