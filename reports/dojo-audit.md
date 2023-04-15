@@ -66,28 +66,28 @@ The following number of issues were found, categorized by their severity:
 The `DojoCHIP` contract calculates user token balances by multiplying user reflections by the ratio of total reflections to total tokens (aka total supply).
 
 The `_getRate()` function calculates the ratio of reflections to tokens returning the total reflections accrued and total tokens using the following formula:
-$$
-\begin{gather*}
+
+```math
     \textcolor{Red}{\_ getRate()}
     =
     \frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}
-\end{gather*}
-$$
+```
+
 The `balanceOf()` function calculates user tokens by multiplying user reflections by the ratio of total tokens to total reflections using the following formula:
-$$
-\begin{gather*}
-    \textcolor{Green}{balanceOf(} user \textcolor{Green}{)}
-    =
-    \frac{\textcolor{Blue}{\_ rOwned[}user\textcolor{Blue}{]}}{\frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}}
-    =
-    \left( 
-        \frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]}}{1}*
-        \frac{\textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
-    \right)
-    =
-    \frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]} * \textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
-\end{gather*}
-$$
+
+```math
+\textcolor{Green}{balanceOf(} user \textcolor{Green}{)}
+=
+\frac{\textcolor{Blue}{\_ rOwned[}user\textcolor{Blue}{]}}{\frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}}
+=
+\left( 
+    \frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]}}{1}*
+    \frac{\textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
+\right)
+=
+\frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]} * \textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
+```
+
 In essence, you solve for user tokens by dividing user reflections by total reflections and multiplying the result by total tokens. Like variables cancel out.
 
 If a buy or sell occurs and reflections are taken, then `_rTotal` is decreased by the reflection fee. When `_rTotal` is decreased, the reflections are distributed to all holders using the previously described formulas. This is able to happen because as `_rTotal` becomes smaller, the number of tokens for all increases since the divisor becomes smaller.
@@ -98,26 +98,26 @@ Let's imagine an scenario where ***gucci*** has accrued 1,000 personal reflectio
 2. $\textcolor{Green}{\_ tTotal} = 9,000,000$ 
 3. $\textcolor{Blue}{\_ rTotal} = 1,000,000,000$
 
-Plugging these values into the previously defined formulas brings ***gucci***'s balance to:   
-$$
-\begin{gather*}
-    \textcolor{Green}{balanceOf(} gucci \textcolor{Green}{)}
-    =
-    \frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{1,000,000,000}}
-    =
-    \text{\textcolor{Green}{9 tokens}}
-\end{gather*}
-$$
-If `_rTotal` were decreased to 900,000,000 after the deduction of reflection fees then ***gucci***'s balance is adjusted to:    
-$$
-\begin{gather*}
-    \textcolor{Green}{balanceOf(\textcolor{Black}{gucci})}
-    =
-    \frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{900,000,000}}
-    =
-    \text{\textcolor{Green}{10 tokens}}
-\end{gather*}
-$$
+Plugging these values into the previously defined formulas brings ***gucci***'s balance to:
+
+```math
+\textcolor{Green}{balanceOf(} gucci \textcolor{Green}{)}
+=
+\frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{1,000,000,000}}
+=
+\text{\textcolor{Green}{9 tokens}}
+```
+
+If `_rTotal` were decreased to 900,000,000 after the deduction of reflection fees then ***gucci***'s balance is adjusted to:
+
+```math
+\textcolor{Green}{balanceOf(\textcolor{Black}{gucci})}
+=
+\frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{900,000,000}}
+=
+\text{\textcolor{Green}{10 tokens}}
+```
+
 As reflection fees are deducted from `_rTotal`, all token balances increase accordingly.
 
 If a decrease in total supply is not accounted for when calculating reflections, then users will end up with more tokens than they should and the sum of all balances will be greater than the true total supply. ​Unfortunately the `_tTotal` variable used in the previous formulas is constant, despite the presence of burning functionality in the contract. This is due to the fact that burned token amounts are deducted from `_tSupply`, not `_tTotal`.  As a result, `_tTotal` does not accurately represent the true total supply which leads to incorrect calculations for transfer amounts, fees, reflections, and overall balances.
