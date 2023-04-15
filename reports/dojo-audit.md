@@ -16,6 +16,14 @@ A smart contract security review can never verify the complete absence of vulner
 
 **Contract Address**: [0xc0e24cc5162176fba60108f40d0ffe3bfff73ed6](https://etherscan.io/address/0xc0e24cc5162176fba60108f40d0ffe3bfff73ed6#code)
 
+## Observations
+
+The token contract, `DojoCHIP` is an erc-20 token with differing buy/sell taxes that route to 3 places; reflections, burns, and a treasury (unverified contract which we can only assume to be used for royalty management amongst the team). The token also includes limits such as max wallet amount, max transaction amount, and a block delay. Lastly, the token has a reflectionary system which allows holders to experience an increase in token balance by just holding their tokens over time.
+
+## Verdict
+
+The contract contains numerous informational-level flaws mostly pertaining to gas inefficiencies and no documentation. There were also a few larger issues with logic/arithmetic that were not implemented correctly. Some larger cases could be mitigated by setting certain global variables to 0 to deflect transactions from touching nefarious code. In terms of the ruggability of this contract, there does not exist any dangerous `onlyOwner` methods that will allow the owner to perform any wicked calls. The only function that could cause a major issue if called maliciously by the owner is mentioned at flag **[H-01]**.
+
 ## Scope
 
 The following smart contracts were in the scope of the audit:
@@ -24,10 +32,10 @@ The following smart contracts were in the scope of the audit:
 
 The following number of issues were found, categorized by their severity:
 - Critical: 1
-- High: 0
+- High: 1
 - Medium: 2
 - Low: 3
-- Informational: 8
+- Informational: 9
 
 ---
 
@@ -36,6 +44,7 @@ The following number of issues were found, categorized by their severity:
 | ID     | Title                                                                                         | Severity      |
 | ------ | --------------------------------------------------------------------------------------------- | ------------- |
 | [C-01] | Inconsistent balances, reflections, and total supply                                          | Critical      |
+| [H-01] | Owner could set delayDigit to lock future transfers                                           | High          |
 | [M-01] | Improper amounts of tokens burned and reflected                                               | Medium        |
 | [M-02] | _transfer not checking balance of sender                                                      | Medium        |
 | [L-01] | Missing zero address validation                                                               | Low           |
@@ -49,6 +58,7 @@ The following number of issues were found, categorized by their severity:
 | [I-06] | Not following Solidity style-guidelines                                                       | Informational |
 | [I-07] | Importing unused Interfaces                                                                   | Informational |
 | [I-08] | Missing NatSpec                                                                               | Informational |
+| [I-09] | Use of a boolean that can never be changed                                                    | Informational |
 
 # Findings
 
@@ -123,6 +133,9 @@ There are two options to mend or fix the balance, reflection, and total supply d
 **NOTE:** All existing balances and reflection amounts cannot be corrected and could still lead to future issues. Even so, this option is cheaper and easier than completely relaunching the token.
 
 2. Relaunch the token, using `_tSupply` in place of `_tTotal`. Unsure what the ramifications of selling off completely would yield. Depending on the Uniswap accounting all liquidity might not be accessible because the returned total supply is not the actual total supply.
+
+## [H-01] Owner could set delayDigit to lock future transfers
+The `DojoCHIP` contract contains a limit that stops anyone from transacting more than once within a range of blocks set by `delayDigit`. The owner has the ability to set the range of `delayDigit` to be so large that they can lock transactions.
 
 ## [M-01] Improper amounts of tokens burned and reflected 
 On transfers that accrue fees, the total amount of tokens taken for burn and reflection fees is passed to the `burnAndReflect()` function. Inside this function this total is split: half of the tokens are burned and the remaining half of the tokens are subtracted from total reflections.
@@ -249,3 +262,12 @@ The `DojoCHIP` contract imports multiple interfaces: `IUniswapV2Router`, `IUnisw
 
 ## [I-08] Missing NatSpec
 The `DojoCHIP` contract is missing any type of documentation, primarily NatSpec. Proper documentation is extremely important in being able to seamlessly communicate implementation with developers, auditors, or investors. Check out more about NatSpec [here](https://docs.soliditylang.org/en/v0.8.17/natspec-format.html).
+
+## [I-09] Use of a boolean that can never be changed
+This contract uses a boolean variable called `transferDelayEnabled` which cannot be updated. The variable is hard coded to the value of `true`. This value is checked before performing the block delay logic in the `_transfer` function.
+```solidity
+if (transferDelayEnabled){
+    //
+}
+```
+There is no reason to be checking the value of a hardcoded boolean. This wastes gas.
