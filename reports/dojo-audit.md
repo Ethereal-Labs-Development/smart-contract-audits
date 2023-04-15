@@ -2,6 +2,8 @@
 
 A security audit on the **Dojo Chip** ($dojo) token.
 
+**Date of Audit**: April 15th, 2023
+
 ## Disclaimer
 
 A smart contract security review can never verify the complete absence of vulnerabilities. This is a time, resource and expertise bound effort where we try to find as many vulnerabilities, inefficiencies, and implementation flaws as possible. Security cannot be 100% guaranteed after the review or even if the review will find any problems with your smart contracts. Subsequent security reviews, bug bounty programs and on-chain monitoring are strongly recommended.
