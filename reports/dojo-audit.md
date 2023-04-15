@@ -22,7 +22,7 @@ The token contract, `DojoCHIP` is an erc-20 token with differing buy/sell taxes 
 
 ## Verdict
 
-The contract contains numerous informational-level flaws mostly pertaining to gas inefficiencies and no documentation. There were also a few larger issues with logic/arithmetic that were not implemented correctly. Some larger cases could be mitigated by setting certain global variables to 0 to deflect transactions from touching nefarious code. In terms of the ruggability of this contract, there does not exist any dangerous `onlyOwner` methods that will allow the owner to perform any wicked calls. The only function that could cause a major issue if called maliciously by the owner is mentioned at flag **[H-01]**.
+The contract contains numerous informational-level flaws mostly pertaining to gas inefficiencies and no documentation. There were also a few larger issues with logic/arithmetic that were not implemented correctly. Some larger cases could be mitigated by setting certain global variables to 0 to deflect transactions from touching nefarious code. In terms of the ruggability of this contract, the only `onlyOwner` method that exists that could cause potential issues is mentioned at flag **[H-01]**.
 
 ## Scope
 
@@ -132,7 +132,8 @@ There are two options to mend or fix the balance, reflection, and total supply d
 2. Relaunch the token, using `_tSupply` in place of `_tTotal`. Unsure what the ramifications of selling off completely would yield. Depending on the Uniswap accounting all liquidity might not be accessible because the returned total supply is not the actual total supply.
 
 ## [H-01] Owner could set delayDigit to lock future transfers
-The `DojoCHIP` contract contains a limit that stops anyone from transacting more than once within a range of blocks set by `delayDigit`. The owner has the ability to set the range of `delayDigit` to be so large that they can lock transactions.
+The `DojoCHIP` contract contains a limit that stops anyone from transacting more than once within a range of blocks set by `delayDigit`. The `delayDigit` value at the time of this audit is set to `0` so there is no block delay in affect. However, the owner has the ability to set the range of `delayDigit` to be so large that they can lock transactions.
+The investor would transact once more after the `delayDigit` was set to a value greater than `0`. After that transaction they would have to wait until `delayDigit * blocks` have passed until that investor could transact again.
 
 ## [M-01] Improper amounts of tokens burned and reflected 
 On transfers that accrue fees, the total amount of tokens taken for burn and reflection fees is passed to the `burnAndReflect()` function. Inside this function this total is split: half of the tokens are burned and the remaining half of the tokens are subtracted from total reflections.
