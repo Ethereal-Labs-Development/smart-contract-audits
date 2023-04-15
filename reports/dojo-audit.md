@@ -70,22 +70,22 @@ The `_getRate()` function calculates the ratio of reflections to tokens returnin
 ```math
     \textcolor{Red}{\_ getRate()}
     =
-    \frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}
+    \frac{\textcolor{Orange}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}
 ```
 
 The `balanceOf()` function calculates user tokens by multiplying user reflections by the ratio of total tokens to total reflections using the following formula:
 
 ```math
-\textcolor{Green}{balanceOf(} user \textcolor{Green}{)}
+\textcolor{Lime}{balanceOf(} user \textcolor{Lime}{)}
 =
-\frac{\textcolor{Blue}{\_ rOwned[}user\textcolor{Blue}{]}}{\frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}}
+\frac{\textcolor{Orange}{\_ rOwned[}user\textcolor{Orange}{]}}{\frac{\textcolor{Orange}{\_ rTotal}}{\textcolor{Lime}{\_ tTotal}}}
 =
 \left( 
-    \frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]}}{1}*
-    \frac{\textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
+    \frac{{\color{Orange}\_ rOwned[} user \textcolor{Orange}{]}}{1}*
+    \frac{{\textcolor{Lime}\_ tTotal}}{{\color{Orange}\_ rTotal}}
 \right)
 =
-\frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]} * \textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
+\frac{\textcolor{Orange}{\_ rOwned[} user \textcolor{Orange}{]} * \textcolor{Lime}{\_ tTotal}}{\textcolor{Orange}{\_ rTotal}}
 ```
 
 In essence, you solve for user tokens by dividing user reflections by total reflections and multiplying the result by total tokens. Like variables cancel out.
@@ -94,28 +94,28 @@ If a buy or sell occurs and reflections are taken, then `_rTotal` is decreased b
 
 **Example Balance Calculations**
 Let's imagine an scenario where ***gucci*** has accrued 1,000 personal reflections, with total tokens at 9,000,000 and total reflections at 1,000,000,000.
-1. $\textcolor{Blue}{\_ rOwned[} gucci \textcolor{Blue}{]} = 1,000$
-2. $\textcolor{Green}{\_ tTotal} = 9,000,000$ 
-3. $\textcolor{Blue}{\_ rTotal} = 1,000,000,000$
+1. ${\color{Orange}\_ rOwned[} gucci {\color{Orange}]} = 1,000$
+2. ${\color{Lime}\_ tTotal} = 9,000,000$
+3. ${\color{Orange}\_ rTotal} = 1,000,000,000$
 
 Plugging these values into the previously defined formulas brings ***gucci***'s balance to:
 
 ```math
-\textcolor{Green}{balanceOf(} gucci \textcolor{Green}{)}
+\textcolor{Lime}{balanceOf(} gucci \textcolor{Lime}{)}
 =
-\frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{1,000,000,000}}
+\frac{\textcolor{Orange}{\textcolor{Orange}{1,000}} * \textcolor{Lime}{9,000,000}}{\textcolor{Orange}{1,000,000,000}}
 =
-\text{\textcolor{Green}{9 tokens}}
+\text{\textcolor{Lime}{9 tokens}}
 ```
 
 If `_rTotal` were decreased to 900,000,000 after the deduction of reflection fees then ***gucci***'s balance is adjusted to:
 
 ```math
-\textcolor{Green}{balanceOf(\textcolor{Black}{gucci})}
+\textcolor{Lime}{balanceOf(} gucci \textcolor{Lime}{)}
 =
-\frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{900,000,000}}
+\frac{\textcolor{Orange}{\textcolor{Orange}{1,000}} * \textcolor{Lime}{9,000,000}}{\textcolor{Orange}{900,000,000}}
 =
-\text{\textcolor{Green}{10 tokens}}
+\text{\textcolor{Lime}{10 tokens}}
 ```
 
 As reflection fees are deducted from `_rTotal`, all token balances increase accordingly.
