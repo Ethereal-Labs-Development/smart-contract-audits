@@ -68,45 +68,42 @@ The `DojoCHIP` contract calculates user token balances by multiplying user refle
 The `_getRate()` function calculates the ratio of reflections to tokens returning the total reflections accrued and total tokens using the following formula:
 $$
 \begin{gather*}
-    \textcolor{Red}{\_getRate()}
+    \textcolor{Red}{\_ getRate()}
     =
-    \frac{\textcolor{RoyalBlue}{\_rTotal}}{\textcolor{OliveGreen}{\_tTotal}}
+    \frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}
 \end{gather*}
 $$
-
 The `balanceOf()` function calculates user tokens by multiplying user reflections by the ratio of total tokens to total reflections using the following formula:
-
 $$
 \begin{gather*}
-    \textcolor{Green}{balanceOf(\textcolor{black}{user})}
+    \textcolor{Green}{balanceOf(} user \textcolor{Green}{)}
     =
-    \frac{\textcolor{RoyalBlue}{\_rOwned[\textcolor{Black}{user}]}}{\frac{\textcolor{RoyalBlue}{\_rTotal}}{\textcolor{Green}{\_tTotal}}}
+    \frac{\textcolor{Blue}{\_ rOwned[}user\textcolor{Blue}{]}}{\frac{\textcolor{Blue}{\_ rTotal}}{\textcolor{Green}{\_ tTotal}}}
     =
     \left( 
-        \frac{\textcolor{RoyalBlue}{\_rOwned[\textcolor{Black}{user}]}}{1}*
-        \frac{\textcolor{Green}{\_tTotal}}{\textcolor{RoyalBlue}{\_rTotal}}
+        \frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]}}{1}*
+        \frac{\textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
     \right)
     =
-    \frac{\textcolor{RoyalBlue}{\_rOwned[\textcolor{Black}{user}]} * \textcolor{Green}{\_tTotal}}{\textcolor{RoyalBlue}{\_rTotal}}
+    \frac{\textcolor{Blue}{\_ rOwned[} user \textcolor{Blue}{]} * \textcolor{Green}{\_ tTotal}}{\textcolor{Blue}{\_ rTotal}}
 \end{gather*}
 $$
-
 In essence, you solve for user tokens by dividing user reflections by total reflections and multiplying the result by total tokens. Like variables cancel out.
 
 If a buy or sell occurs and reflections are taken, then `_rTotal` is decreased by the reflection fee. When `_rTotal` is decreased, the reflections are distributed to all holders using the previously described formulas. This is able to happen because as `_rTotal` becomes smaller, the number of tokens for all increases since the divisor becomes smaller.
 
 **Example Balance Calculations**
 Let's imagine an scenario where ***gucci*** has accrued 1,000 personal reflections, with total tokens at 9,000,000 and total reflections at 1,000,000,000.
-1. $\textcolor{RoyalBlue}{\_rOwned[\textcolor{Black}{gucci}]} = 1,000$
-2. $\textcolor{Green}{\_tTotal} = 9,000,000$ 
-3. $\textcolor{RoyalBlue}{\_rTotal} = 1,000,000,000$
+1. $\textcolor{Blue}{\_ rOwned[} gucci \textcolor{Blue}{]} = 1,000$
+2. $\textcolor{Green}{\_ tTotal} = 9,000,000$ 
+3. $\textcolor{Blue}{\_ rTotal} = 1,000,000,000$
 
 Plugging these values into the previously defined formulas brings ***gucci***'s balance to:   
 $$
 \begin{gather*}
-    \textcolor{Green}{balanceOf(\textcolor{Black}{gucci})}
+    \textcolor{Green}{balanceOf(} gucci \textcolor{Green}{)}
     =
-    \frac{\textcolor{RoyalBlue}{\textcolor{RoyalBlue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{RoyalBlue}{1,000,000,000}}
+    \frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{1,000,000,000}}
     =
     \text{\textcolor{Green}{9 tokens}}
 \end{gather*}
@@ -116,7 +113,7 @@ $$
 \begin{gather*}
     \textcolor{Green}{balanceOf(\textcolor{Black}{gucci})}
     =
-    \frac{\textcolor{RoyalBlue}{\textcolor{RoyalBlue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{RoyalBlue}{900,000,000}}
+    \frac{\textcolor{Blue}{\textcolor{Blue}{1,000}} * \textcolor{Green}{9,000,000}}{\textcolor{Blue}{900,000,000}}
     =
     \text{\textcolor{Green}{10 tokens}}
 \end{gather*}
