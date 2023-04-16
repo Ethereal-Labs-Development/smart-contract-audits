@@ -8,12 +8,6 @@ An audit of the **DojoCHIP** ($dojo) reflectionary tax token.
 
 Smart contract audits can never verify the complete absence of vulnerabilities, errors, or any other form of issues. This is a time, resource, and expertise bound effort where our team attempts to find and distinguish as many vulnerabilities, errors, and inefficiencies as possible. Security and proper functionality cannot be 100% guaranteed in the event that our review fails to reveal any issues in your smart contracts or you make changes to the smart contracts following review suggestions. Subsequent audits, bug bounty programs, and on-chain monitoring are strongly recommended.
 
-## Credits
-
-Special thank you to the legendary [Pashov Krum](https://github.com/pashov/audits), an independent smart contract security researcher. Our report strongly follows his template design.
-
-Special thank you to Dojo Chip team for being our first audit clients. Our team valued your patience, trust, and cooperation throughout the process.
-
 ## About Dojo Chip
 
 **Description**: “Dojo Chip is an ERC-20 project that has a community filled with AI fanatics. Their team hopes to provide security to the space through a transaction vetting process. They are looking to build a payment processing system that will allow users to go from credit/debit to crypto without requiring hot wallets such as MetaMask.”
