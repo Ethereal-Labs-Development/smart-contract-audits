@@ -75,15 +75,15 @@ The `DojoCHIP` contract calculates user token balances by multiplying user refle
 
 The `_getRate()` function calculates the ratio of reflections to tokens returning the total reflections accrued and total tokens using the following formula:
 
-$$
+```math
 {\color{Green}\_ getRate()}
 =
 \frac{{\color{Orange}\_ rTotal}}{{\color{Cyan}\_ tTotal}}
-$$
+```
 
 The `balanceOf()` function calculates user tokens by multiplying user reflections by the ratio of total tokens to total reflections using the following formula:
 
-$$
+```math
 {\color{Cyan}balanceOf(} user {\color{Cyan})}
 =
 \frac{ {\color{Orange}\_ rOwned[} user {\color{Orange}]} }{ \frac{ {\color{Orange}\_ rTotal} }{ {\color{Cyan}\_ tTotal}} }
@@ -94,7 +94,7 @@ $$
 \right)
 =
 \frac{\textcolor{Orange}{\_ rOwned[} user \textcolor{Orange}{]} * {\color{Cyan}\_ tTotal} }{ {\color{Orange}\_ rTotal} }
-$$
+```
 
 In essence, you solve for user tokens by dividing user reflections by total reflections and multiplying the result by total tokens. Like variables cancel out.
 
@@ -109,23 +109,23 @@ Let's imagine an scenario where ***gucci*** has accrued 1,000 personal reflectio
 
 Plugging these values into the previously defined formulas brings ***gucci***'s balance to:
 
-$$
+```math
 {\color{Cyan}balanceOf(} gucci {\color{Cyan})}
 =
 \frac{{\color{Orange}1,000} * {\color{Cyan}9,000,000}}{{\color{Orange}900,000,000}}
 =
 \text{\color{Cyan}9 tokens}
-$$
+```
 
 If `_rTotal` were decreased to 900,000,000 after the deduction of reflection fees then ***gucci***'s balance is adjusted to:
 
-$$
+```math
 {\color{Cyan}balanceOf(} gucci {\color{Cyan})}
 =
 \frac{{\color{Orange}1,000} * {\color{Cyan}9,000,000}}{{\color{Orange}900,000,000}}
 =
 \text{\color{Cyan}10 tokens}
-$$
+```
 
 As reflection fees are deducted from `_rTotal`, all token balances increase accordingly.
 
