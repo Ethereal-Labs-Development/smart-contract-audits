@@ -4,6 +4,8 @@ An audit of the **DojoCHIP** ($dojo) reflectionary tax token.
 
 **Date of Audit**: April 15th, 2023
 
+**Report Template**: [Pashov Krum](https://github.com/pashov/audits)
+
 ## Disclaimer
 
 Smart contract audits can never verify the complete absence of vulnerabilities, errors, or any other form of issues. This is a time, resource, and expertise bound effort where our team attempts to find and distinguish as many vulnerabilities, errors, and inefficiencies as possible. Security and proper functionality cannot be 100% guaranteed in the event that our review fails to reveal any issues in your smart contracts or you make changes to the smart contracts following review suggestions. Subsequent audits, bug bounty programs, and on-chain monitoring are strongly recommended.
