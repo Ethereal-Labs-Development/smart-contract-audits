@@ -61,7 +61,7 @@ The following number of issues were found, organized by severity:
 | [I-07] | Importing unused interfaces                                                                   | Informational |
 | [I-08] | Missing NatSpec                                                                               | Informational |
 | [I-09] | Not following Solidity style guide                                                            | Informational |
-| [I=10] | Updates to state variable can be overwritten                                                  | Informational |
+| [I-10] | Updates to state variable can be overwritten                                                  | Informational |
 
 # Findings
 
