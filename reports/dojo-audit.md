@@ -26,7 +26,7 @@ The token contract, `DojoCHIP` is an ERC-20 token with differing buy/sell taxes 
 
 ## Verdict
 
-The contract contains numerous informational-level flaws mostly pertaining to gas inefficiencies and lack of documentation. There were also a few larger issues with logic and arithmetic that were not implemented correctly. Some of these larger issues can be mitigated by setting certain fees to zero in order to prevent transactions from touching problematic code. In terms of the "ruggability" of this contract, the only `onlyOwner` method that exists that could cause potential issues is mentioned at flag **[H-01]**. Overall the contract functions moderately well and will keep investments safest by fixing the respective fees.
+The contract contains numerous informational-level flaws mostly pertaining to gas inefficiencies and lack of documentation. There were also a few larger issues with logic and arithmetic that were not implemented correctly. Some of these larger issues can be mitigated by setting certain fees to zero in order to prevent transactions from touching problematic code. In terms of the "ruggability" of this contract, there does not exist any `onlyOwner` functions that would result in a "rug" or loss of funds. Overall the contract functions moderately well.
 
 ## Scope
 
@@ -35,11 +35,11 @@ The following smart contract(s) were in the scope of the audit:
 - `DojoCHIP` the $dojo ERC-20 token contract in `dojo.sol`.
 
 The following number of issues were found, organized by severity:
-- Critical: 1
+- Critical: 0
 - High: 1
 - Medium: 2
-- Low: 3
-- Informational: 9
+- Low: 2
+- Informational: 10
 
 ---
 
@@ -47,12 +47,10 @@ The following number of issues were found, organized by severity:
 
 | ID     | Title                                                                                         | Severity      |
 | ------ | --------------------------------------------------------------------------------------------- | ------------- |
-| [C-01] | Inconsistent balances, reflections, and total supply                                          | Critical      |
-| [H-01] | Owner could set delayDigit to lock future transfers                                           | High          |
+| [H-01] | Inconsistent balances, reflections, and total supply                                          | High          |
 | [M-01] | Improper amounts of tokens burned and reflected                                               | Medium        |
 | [M-02] | _transfer not checking balance of sender                                                      | Medium        |
 | [L-01] | Missing zero address validation                                                               | Low           |
-| [L-02] | Updates to state variable can be overwritten                                                  | Low           |
 | [L-03] | Integration of a burn function without using ERC20’s native _burn                             | Low           |
 | [I-01] | Unnecessary use of internal functions to return public state variables                        | Informational |
 | [I-02] | Unnecessary use of internal function that only calls another internal function                | Informational |
@@ -63,10 +61,11 @@ The following number of issues were found, organized by severity:
 | [I-07] | Importing unused interfaces                                                                   | Informational |
 | [I-08] | Missing NatSpec                                                                               | Informational |
 | [I-09] | Not following Solidity style guide                                                            | Informational |
+| [I=10] | Updates to state variable can be overwritten                                                  | Informational |
 
 # Findings
 
-## [C-01] Inconsistent balances, reflections, and total supply
+## [H-01] Inconsistent balances, reflections, and total supply
 The `DojoCHIP` contract calculates user token balances by multiplying user reflections by the ratio of total reflections to total tokens (aka total supply).
 
 The `_getRate()` function calculates the ratio of reflections to tokens returning the total reflections accrued and total tokens using the following formula:
@@ -129,16 +128,14 @@ If a decrease in total supply is not accounted for when calculating reflections,
 
 If `_tSupply` and `_tTotal` are not kept in sync, the total reflections to total tokens ratio is broken. Any reflections calculated during transactions will be higher since `_rTotal` (total reflections) is always decreasing while `_tTotal` (original total supply) is constant. The `_tSupply` variable is the true total supply of the token since it deducts burned token amounts and the `totalSupply()` function returns its value.
 
+**NOTE**: This issue is only a danger to the token logic when `buyReflectionFee`, `sellReflectionFee`, `buyBurnFee`, and `sellBurnFee` are all greater than `0`. At the time of this report, all of these values were set to `0`.
+
 #### Recommendation
 There are two options to mend or fix the balance, reflection, and total supply discrepancies:
 1. Turn off burn and reflection fees by setting `buyBurnFee`, `buyReflectionFee`, `sellBurnFee`, and `sellReflectionFee` to zero to prevent further losses. Effectively convert the contract to a simple fee token that only takes fees during buys or sells for the treasury since these fees are unaffected by the reflection and burn fees.
 **NOTE:** All existing balances and reflection amounts cannot be corrected and could still lead to future issues. Even so, this option is cheaper and easier than completely relaunching the token.
 
 2. Relaunch the token, using `_tSupply` in place of `_tTotal`. Unsure what the ramifications of selling off completely would yield. Depending on the Uniswap accounting all liquidity might not be accessible because the returned total supply is not the actual total supply.
-
-## [H-01] Owner could set delayDigit to lock future transfers
-The `DojoCHIP` contract contains a limit that stops anyone from transacting more than once within a range of blocks set by `delayDigit`. The `delayDigit` value at the time of this audit is set to `0` so there is no block delay in affect. However, the owner has the ability to set the range of `delayDigit` to be so large that they can lock transactions effectively forever.
-The investor would transact once more after the `delayDigit` was set to a value greater than `0`. After that transaction they would have to wait until `delayDigit * blocks` have passed until that investor could transact again.
 
 ## [M-01] Improper amounts of tokens burned and reflected 
 On transfers that accrue fees, the total amount of tokens taken for burn and reflection fees is passed to the `burnAndReflect()` function. Inside this function this total is split: half of the tokens are burned and the remaining half of the tokens are subtracted from total reflections.
@@ -148,6 +145,8 @@ The `burnAndReflect()` function will always burn half of the sum of `tokensForRe
 2. Incorrectly adjusts the total tokens reflected and burned
 
 Only `tokensForBurns` worth of tokens should be burned and only `tokensForReflections` worth of tokens should be reflected.
+
+**NOTE**: This issue is only a danger to the token logic when `buyReflectionFee`, `sellReflectionFee`, `buyBurnFee`, and `sellBurnFee` are all greater than `0`. At the time of this report, all of these values were set to `0`.
 
 #### Recommendation
 Turn off burn and reflection fees by setting `buyBurnFee`, `buyReflectionFee`, `sellBurnFee`, and `sellReflectionFee` to zero to prevent further losses. Effectively convert the contract to a simple fee token that only takes fees during buys or sells for the treasury.
@@ -160,12 +159,6 @@ The `DojoCHIP` contract contains a `Treasury` address that is used to accumulate
 
 #### Recommendation
 Check that `newTreasuryWallet` is not `address(0)`.
-
-## [L-02] Updates to state variable can be overwritten
-The `DojoCHIP` contract contains a variable called `swapTokensAtAmount` which acts as a threshold to distribute royalties accumulated by the contract. This value is overwritten by `updateLimits` and hardcoded to `swapTokensAtAmount = _tSupply * 1 / 10000`. `updateLimits` is called every time a call to `_transfer` is made and `refiAmount` is greater than 0.
-
-#### Recommendation
-Set `buyBurnFee`, `buyReflectionFee`, `sellBurnFee`, and `sellReflectionFee` to 0 and if `swapTokensAtAmount` needs to be changed, call `updateSwapTokensAtAmount()`.
 
 ## [L-03] Integration of a burn function without using ERC20’s native _burn
 This contract integrates a burn fee which takes a portion of taxes and sends it to the dead address to signify a burn of tokens.
@@ -277,3 +270,8 @@ There are multiple instances throughout the `DojoCHIP` contract where the Solidi
 - Improper use of underscore prefixes on functions and variables that are not `private` or `internal`
 
 To learn more about the Solidity style guide, please read [here](https://docs.soliditylang.org/en/v0.8.19/style-guide.html).
+
+## [I-10] Updates to state variable can be overwritten
+The `DojoCHIP` contract contains a variable called `swapTokensAtAmount` which acts as a threshold to distribute royalties accumulated by the contract. This value is overwritten by `updateLimits` and hardcoded to `swapTokensAtAmount = _tSupply * 1 / 10000`. `updateLimits` is called every time a call to `_transfer` is made and `refiAmount` is greater than 0.
+
+**NOTE**: This issue only affects the token logic when `buyReflectionFee`, `sellReflectionFee`, `buyBurnFee`, and `sellBurnFee` are all greater than `0`. At the time of this report, all of these values were set to `0`.
