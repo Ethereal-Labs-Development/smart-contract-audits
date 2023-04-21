@@ -108,7 +108,7 @@ Plugging these values into the previously defined formulas brings ***gucci***'s 
 ```math
 {\color{Cyan}balanceOf(} gucci {\color{Cyan})}
 =
-\frac{{\color{Orange}1,000} * {\color{Cyan}9,000,000}}{{\color{Orange}900,000,000}}
+\frac{{\color{Orange}1,000} * {\color{Cyan}9,000,000}}{{\color{Orange}1,000,000,000}}
 =
 \text{\color{Cyan}9 tokens}
 ```
