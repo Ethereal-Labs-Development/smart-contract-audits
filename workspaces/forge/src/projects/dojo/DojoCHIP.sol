@@ -2,18 +2,18 @@
 pragma solidity ^0.8.9;
 
 // Parents
-import { ERC20 } from "./ERC20.sol";
-import { Ownable } from "./Ownable.sol";
+import { ERC20 } from "../../bases/ERC20.sol";
+import { Ownable } from "../../bases/Ownable.sol";
 
 // Libraries
 // @audit SafeMath is used in DojoCHIP and ERC20 contracts.
-import { SafeMath } from "./SafeMath.sol";
+import { SafeMath } from "../../libraries/SafeMath.sol";
 
 // Interfaces
-import { IUniswapV2Router02 } from "./IUniswapV2Router02.sol"; /// @notice Includes IUniswapV2Router01 interface.
-import { IUniswapV2Factory } from "./IUniswapV2Factory.sol";
+import { IUniswapV2Router02 } from "../../interfaces/IUniswapV2Router02.sol"; /// @notice Includes IUniswapV2Router01 interface.
+import { IUniswapV2Factory } from "../../interfaces/IUniswapV2Factory.sol";
 // @gas This interface is included in the flattened contract but never used.
-import { IUniswapV2Pair } from "./IUniswapV2Pair.sol"; 
+import { IUniswapV2Pair } from "../../interfaces/IUniswapV2Pair.sol"; 
 
 contract DojoCHIP is ERC20, Ownable {
     // @audit Use of deprecated library for Solidity version 0.8.0+

@@ -3,9 +3,9 @@ pragma solidity ^0.8.9;
 
 import { Context } from "./Context.sol"; /// @notice not sure if this is even necessary... especially if DojoCHIP inherits Ownable which inherits Context.
 
-import { SafeMath } from "./SafeMath.sol";
+import { SafeMath } from "../libraries/SafeMath.sol";
 
-import { IERC20Metadata } from "./IERC20Metadata.sol"; /// @notice this includes IERC20 interface.
+import { IERC20Metadata } from "../interfaces/IERC20Metadata.sol"; /// @notice this includes IERC20 interface.
 
 contract ERC20 is Context, IERC20Metadata {
     using SafeMath for uint256;

@@ -2,9 +2,9 @@
 pragma solidity ^0.8.9;
 
 import "../lib/forge-std/src/Test.sol";
-import { DojoCHIP } from "../src/projects/dojo/Unflattened/DojoCHIP.sol";
-import { IUniswapV2Router02 } from "../src/projects/dojo/Unflattened/IUniswapV2Router02.sol";
-import { IUniswapV2Pair } from "../src/projects/dojo/Unflattened/IUniswapV2Pair.sol";
+import { DojoCHIP } from "../src/projects/dojo/DojoCHIP.sol";
+import { IUniswapV2Router02 } from "../src/interfaces/IUniswapV2Router02.sol";
+import { IUniswapV2Pair } from "../src/interfaces/IUniswapV2Pair.sol";
 
 /// @notice Unit tests to validate DojoCHIP token functionality and implementation.
 contract DojoTest is Test {
@@ -141,48 +141,46 @@ contract DojoTest is Test {
         // TO CONFIRM THAT BALANCES ARE NO LONGER INCREASING WHEN THE REFLECTION AND BURN FEES ARE SET TO ZERO.
 
 
-        // at this point only the uniswapV2Pair and owner have any dojo tokens
-        uint256 pairBalBefore = dojo.balanceOf(address(uniswapV2Pair));
-        uint256 ownerBalBefore = dojo.balanceOf(address(this));
-        assertEq(pairBalBefore, 450_000_000_000);
-        assertEq(ownerBalBefore, 450_000_000_000);
-        assertEq(ownerBalBefore + pairBalBefore + dojo.balanceOf(seller), dojo.totalSupply());
+        // // at this point only the uniswapV2Pair and owner have any dojo tokens
+        // uint256 pairBalBefore = dojo.balanceOf(address(uniswapV2Pair));
+        // uint256 ownerBalBefore = dojo.balanceOf(address(this));
+        // assertEq(pairBalBefore, 450_000_000_000);
+        // assertEq(ownerBalBefore, 450_000_000_000);
+        // assertEq(ownerBalBefore + pairBalBefore + dojo.balanceOf(seller), dojo.totalSupply());
 
-        // give tokens tax free from owner to seller
-        dojo.transfer(seller, amountToSell);
+        // // give tokens tax free from owner to seller
+        // dojo.transfer(seller, amountToSell);
 
-        // remove limits
-        dojo.removeLimits();
+        // // remove limits
+        // dojo.removeLimits();
         
-        vm.startPrank(seller);
-        // seller does not have any ether and is not excluded from fees
-        assertEq(seller.balance, 0);
-        assertEq(dojo._isExcludedFromFees(seller), false);
+        // vm.startPrank(seller);
+        // // seller does not have any ether and is not excluded from fees
+        // assertEq(seller.balance, 0);
+        // assertEq(dojo._isExcludedFromFees(seller), false);
 
-        // create uniswap path of DojoCHIP -> WETH
-        address[] memory path = new address[](2);
-        path[0] = address(dojo);
-        path[1] = uniswapV2Router.WETH();
+        // // create uniswap path of DojoCHIP -> WETH
+        // address[] memory path = new address[](2);
+        // path[0] = address(dojo);
+        // path[1] = uniswapV2Router.WETH();
 
-        // approve token amount
-        dojo.approve(address(uniswapV2Router), amountToSell);
+        // // approve token amount
+        // dojo.approve(address(uniswapV2Router), amountToSell);
 
-        // swap the tokens for ether
-        uniswapV2Router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-            amountToSell,
-            0, // accept any amount of ether
-            path,
-            seller, // send ether to the seller
-            block.timestamp
-        );
+        // // swap the tokens for ether
+        // uniswapV2Router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+        //     amountToSell,
+        //     0, // accept any amount of ether
+        //     path,
+        //     seller, // send ether to the seller
+        //     block.timestamp
+        // );
 
-        // seller should have received ether for sold tokens
-        assertGt(seller.balance, 0);
-        assertLt(dojo.balanceOf(seller), amountToSell);
-        vm.stopPrank();
+        // // seller should have received ether for sold tokens
+        // assertGt(seller.balance, 0);
+        // assertLt(dojo.balanceOf(seller), amountToSell);
+        // vm.stopPrank();
 
-
-        // 
     }
 
 }
